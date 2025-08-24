@@ -113,50 +113,123 @@ namespace set {
 #include <set>
 #include <unordered_set>
 #include <flat_set>
+#include <algorithm>
 
 namespace dynamic_set{
     // dynamic set: a value of a type
-    bool is_set(int) {
+    constexpr bool is_set(int) {
         return false;
     }
     template<size_t N>
-    bool is_set(std::bitset<N>) {
+    constexpr bool is_set(std::bitset<N>) {
         return true;
     }
     template<typename T>
-    bool is_set(std::set<T>) {
+    constexpr bool is_set(std::set<T>) {
         return true;
     }
     template<typename T>
-    bool is_set(std::unordered_set<T>) {
+    constexpr bool is_set(std::unordered_set<T>) {
         return true;
     }
     template<typename T>
-    bool is_set(std::flat_set<T>) {
+    constexpr bool is_set(std::flat_set<T>) {
         return true;
     }
 
     template<typename F>
     class satisfied_set {
     public:
-        satisfied_set(F p) : m_p{std::move(p)}
+        constexpr satisfied_set(F p) : m_p{std::move(p)}
         {}
-        bool contains(auto element) {
+        constexpr bool contains(auto element) {
             return m_p(element);
         }
     private:
         F m_p;
     };
     template<typename F>
-    bool is_set(satisfied_set<F>) {
+    constexpr bool is_set(satisfied_set<F>) {
         return true;
     }
     template<typename F>
-    bool belong_to(auto element, satisfied_set<F> s) {
+    constexpr bool belong_to(auto element, satisfied_set<F> s) {
         return s.contains(element);
     }
     template<typename F>
-    bool contains(satisfied_set<F> s, auto element) {
+    constexpr bool contains(satisfied_set<F> s, auto element) {
         return s.contains(element);
+    }
+
+    template<typename T1, typename T2>
+    constexpr bool is_subset(std::set<T1> A, std::set<T2> B) {
+        return std::ranges::for_each(A,
+                [&B](auto a) {
+                    std::ranges::contains(B, a);
+                }
+                );
+    }
+
+    template<typename T1, typename T2>
+    constexpr bool is_equal(std::set<T1> A, std::set<T2> B) {
+        return A.size() == B.size() &&
+            is_subset(A, B);
+    }
+    template<typename T1, typename T2>
+    constexpr bool is_proper_subset(std::set<T1> A, std::set<T2> B) {
+        return A.size() < B.size() &&
+            is_subset(A, B);
+    }
+
+    struct empty_set{};
+    constexpr bool is_subset(empty_set, auto) {
+        return true;
+    }
+
+    template<typename S1, typename S2>
+    class union_set {
+    public:
+        union_set(S1 s1, S2 s2) : m_s1{s1}, m_s2{s2}
+        {}
+        constexpr bool contains(auto element) {
+            return contains(m_s1, element) || contains(m_s2, element);
+        }
+    private:
+        S1 m_s1;
+        S2 m_s2;
+    };
+    template<typename S1, typename S2>
+    constexpr bool is_set(union_set<S1,S2>) { return true; }
+    template<typename S1, typename S2>
+    constexpr bool is_subset(S1, union_set<S1,S2>) { return true; }
+    template<typename S1, typename S2>
+    constexpr bool is_subset(S2, union_set<S1,S2>) { return true; }
+
+    template<typename S1, typename S2>
+    class intersection_set {
+    public:
+        intersection_set(S1 s1, S2 s2) : m_s1{s1}, m_s2{s2}
+        {}
+        constexpr bool contains(auto element) {
+            return contains(m_s1, element) && contains(m_s2, element);
+        }
+    private:
+        S1 m_s1;
+        S2 m_s2;
+    };
+    template<typename S1, typename S2>
+    constexpr bool is_set(intersection_set<S1,S2>) { return true; }
+    template<typename S1, typename S2>
+    constexpr bool is_subset(intersection_set<S1,S2>, S1) { return true; }
+    template<typename S1, typename S2>
+    constexpr bool is_subset(intersection_set<S1,S2>, S2) { return true; }
+
+    template<typename T1, typename T2>
+    constexpr bool is_disjoint(std::set<T1> A, std::set<T2> B) {
+        return std::ranges::for_each(A,
+                [&B](auto a) {
+                    return !contains(B, a);
+                }
+                );
     }
 }
