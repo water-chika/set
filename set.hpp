@@ -3,6 +3,7 @@
 #include <variant>
 
 namespace set {
+    // static set: a type
     template<typename T>
     struct is_set {
         static constexpr bool value = false;
@@ -11,6 +12,47 @@ namespace set {
     constexpr bool is_set_v = is_set<T>::value;
     template<typename T>
     concept set = is_set_v<T>;
+
+    // dynamic set: a value of a type
+    bool is_set(int) {
+        return false;
+    }
+    bool is_set(std::bitset) {
+        return true;
+    }
+    bool is_set(std::set) {
+        return true;
+    }
+    bool is_set(std::unordered_set) {
+        return true;
+    }
+    bool is_set(std::flat_set) {
+        return true;
+    }
+
+    template<typename F>
+    class satisfied_set {
+    public:
+        satisfied_set(F p) : m_p{std::move(p)}
+        {}
+        bool contains(auto element) {
+            return m_p(element);
+        }
+    private:
+        F m_p;
+    };
+    template<typename F>
+    bool is_set(satisfied_set<F>) {
+        return true;
+    }
+    template<typename F>
+    bool belong_to(auto element, satisfied_set<F> s) {
+        return s.contains(element);
+    }
+    template<typename F>
+    bool contains(satisfied_set<F> s, auto element) {
+        return s.contains(element);
+    }
 
     template<typename A, typename B>
     struct is_same_set {
