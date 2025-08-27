@@ -232,4 +232,23 @@ namespace dynamic_set{
                 }
                 );
     }
+
+    template<typename S1, typename S2>
+    class cartesian_product_set {
+    public:
+        cartesian_product_set(S1 s1, S2 s2) : m_s1{s1}, m_s2{s2}
+        {}
+        constexpr bool contains(auto element) {
+            auto& [a,b] = element;
+            return contains(m_s1, a) && contains(m_s2, b);
+        }
+    private:
+        S1 m_s1;
+        S2 m_s2;
+    };
+
+    template<typename T1, typename T2>
+    constexpr auto cartesian_product(std::set<T1> A, std::set<T2> B) {
+        return cartesian_product_set(A, B);
+    }
 }
