@@ -114,6 +114,7 @@ namespace set {
 #include <unordered_set>
 #include <flat_set>
 #include <algorithm>
+#include <functional>
 
 namespace dynamic_set{
     // dynamic set: a value of a type
@@ -160,6 +161,12 @@ namespace dynamic_set{
     constexpr bool contains(satisfied_set<F> s, auto element) {
         return s.contains(element);
     }
+
+    template<typename T>
+    class type_set {
+    public:
+        constexpr bool contains(T element) { return true; }
+    };
 
     template<typename T1, typename T2>
     constexpr bool is_subset(std::set<T1> A, std::set<T2> B) {
@@ -250,5 +257,47 @@ namespace dynamic_set{
     template<typename T1, typename T2>
     constexpr auto cartesian_product(std::set<T1> A, std::set<T2> B) {
         return cartesian_product_set(A, B);
+    }
+
+    template<typename T1, typename T2>
+    constexpr bool is_relation(std::set<std::pair<T1,T2>>) { return true; }
+
+    template<typename T1, typename T2>
+    constexpr bool is_mapping(std::function<T1(T2)>) { return true; }
+    constexpr bool is_function(auto v) { return is_mapping(v); }
+
+    template<typename T1, typename T2>
+    auto get_relation_sets(std::set<std::pair<T1,T2>> relation) {
+        return std::pair{type_set<T1>{}, type_set<T2>{}};
+    }
+
+    namespace relation {
+        template<typename T1, typename T2>
+        constexpr bool is_well_defined(std::function<T1(T2)>) { return true; }
+    }
+
+    namespace function {
+        template<typename T1, typename T2>
+        auto get_domain(std::function<T1(T2)>) {
+            return type_set<T2>{};
+        }
+        template<typename T1, typename T2>
+        auto get_range(std::function<T1(T2)>) {
+            return type_set<T1>{};
+        }
+        auto get_image(auto f) { return get_range(f); }
+
+        template<typename F1, typename F2>
+        class composition{
+        public:
+            composition(F1 f1, F2 f2) : m_f1{f1}, m_f2{f2}
+            {}
+        private:
+            F1 m_f1;
+            F2 m_f2;
+        };
+        auto composite(auto g, auto f) {
+            return composition{g, f};
+        }
     }
 }
